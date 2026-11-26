@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>AssetPark</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="/디자인토큰.css">
+<link rel="stylesheet" href="/정적/앱.css">
+<!-- three.js는 이 폴더 안의 사본을 쓴다(바깥에서 불러오지 않음). 3D 보기(보기3d.js, W02)가 import 'three'로 쓴다. -->
+<script type="importmap">
+{ "imports": {
+  "three": "/정적/lib/three/build/three.module.js",
+  "three/addons/": "/정적/lib/three/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<div class="app" id="app">
+  <header class="top" data-칸="윗줄">
+    <b class="pagename" data-순서="페이지 이름">AssetPark</b>
+    <label class="pill charpick" data-순서="캐릭터 고르기" title="캐릭터 고르기">
+      <span class="lbl">캐릭터</span><span class="val" id="charname">—</span><span class="arrow">▾</span>
+      <select id="char" aria-label="캐릭터 고르기"></select>
+    </label>
+    <span class="pill" data-순서="지금 단계" id="curstep">단계 —</span>
+    <span class="sp"></span>
+    <button class="pill sendtop" id="sendtop" type="button" disabled hidden title="보낼 표시가 없습니다">표시 0개 보내기</button>
+    <span class="pill" data-순서="TRIPO 잔액" id="tripo">TRIPO 잔액 알 수 없음</span>
+    <span class="pill local" data-순서="주소" id="addr">● 확인 중</span>
+  </header>
+  <div class="main" id="main">
+    <section class="card left" data-칸="왼쪽">
+      <h3 data-순서="칸 제목">단계</h3>
+      <div class="steps" id="steps" data-순서="단계 줄"></div>
+      <button class="importbtn" type="button" data-순서="파일 가져오기" disabled title="불러오는 중">＋ 파일 가져오기<span class="hint">TRIPO 웹에서 받은 것 등 · 끌어 놓아도 됨</span></button>
+      <input type="file" id="impfile" accept=".png,.jpg,.jpeg,.glb,.fbx,.obj,.blend" hidden>
+    </section>
+    <section class="card center" data-칸="가운데">
+      <div class="head" data-순서="제목줄">
+        <h2 id="title">—</h2><span class="src" id="src"></span><span class="sp"></span><span class="src" id="folder"></span>
+      </div>
+      <div class="body" id="body"></div>
+    </section>
+    <section class="card side" data-칸="오른쪽">
+      <h3 data-순서="칸 제목"><span class="ttltext">결정</span><button class="tb fold" id="fold" type="button" title="결정 칸 접기" aria-expanded="true">접기 ›</button></h3>
+      <button class="tb unfold" id="unfold" type="button" title="결정 칸 펴기" aria-label="결정 칸 펴기">‹ 펼치기</button>
+      <div class="sbody" id="side">
+        <div class="note" data-순서="에이전트 알림"><div class="ttl">에이전트 알림</div><span id="alert">아직 알림 없음</span></div>
+        <div class="sendwrap" data-순서="보내기">
+          <button class="send" id="send" type="button" disabled title="보낼 표시가 없습니다">표시 0개 보내기</button>
+          <div class="hint">칠하거나 후보를 판단하면 누를 수 있습니다.</div>
+        </div>
+        <div class="grow"></div>
+        <div class="chatnote" data-순서="대화는 Claude 앱에서">대화는 Claude 앱에서 합니다. 이 페이지에서 누른 것은 파일로 저장되고, 앱에서 "보냈어"라고 하면 에이전트가 읽습니다.</div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<div class="overlay" id="ask" hidden>
+  <div class="dlg" role="dialog" aria-modal="true" aria-labelledby="askttl">
+    <div class="dlgttl" id="askttl">새 캐릭터로 만들까요?</div>
+    <div class="dlgbody" id="askbody"></div>
+    <div class="btns2">
+      <button class="btn b-ok" id="askyes" type="button">새 캐릭터로 만들기</button>
+      <button class="btn b-re" id="askno" type="button">취소</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="ask2" hidden>
+  <div class="dlg" role="dialog" aria-modal="true" aria-labelledby="ask2ttl">
+    <div class="dlgttl" id="ask2ttl"></div>
+    <div class="dlgbody" id="ask2body"></div>
+    <div class="btns2" id="ask2btns"></div>
+  </div>
+</div>
+
+<div class="overlay" id="imp" hidden>
+  <div class="dlg imp" role="dialog" aria-modal="true" aria-labelledby="impttl">
+    <div class="dlgttl" id="impttl">파일 가져오기</div>
+    <div class="dlgbody" id="impbody"></div>
+    <div class="btns2" id="impbtns"></div>
+  </div>
+</div>
+
+<div class="banners" id="banners">
+  <div class="banner danger" id="b-off" hidden>서버와 연결 끊김 — 다시 켜 주세요. 켜지면 저절로 다시 이어집니다.</div>
+  <div class="banner warn" id="b-tab" hidden>이 캐릭터가 다른 탭에서 열려 있습니다. 이 탭에서는 칠하기를 막습니다. 다른 탭을 닫으면 풀립니다.</div>
+  <div class="banner danger" id="b-err" hidden></div>
+  <div class="banner danger" id="b-save" hidden></div>
+</div>
+<script src="/정적/앱.js"></script>
+<script src="/정적/결정.js"></script>
+<script src="/정적/가져오기.js"></script>
+<script src="/정적/그림단계.js"></script>
+<script src="/정적/생성단계.js"></script>
+<script src="/정적/메시단계.js"></script>
+<script src="/정적/텍스처단계.js"></script>
+<script src="/정적/리깅단계.js"></script>
+<script src="/정적/동작단계.js"></script>
+<script type="module" src="/정적/보기3d.js"></script>
+<script type="module" src="/정적/칠하기.js"></script>
+<script type="module" src="/정적/uv그림.js"></script>
+<script type="module" src="/정적/부위.js"></script>
+</body>
+</html>
